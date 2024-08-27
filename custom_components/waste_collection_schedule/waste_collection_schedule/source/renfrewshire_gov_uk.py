@@ -71,20 +71,33 @@ class Source:
 
     def __get_bin_collection_info(self, binformation):
         soup = BeautifulSoup(binformation, "html.parser")
-        all_collections = soup.select(
+        # Get the bin collections element
+        bin_collections = soup.select(
             "#RENFREWSHIREBINCOLLECTIONS_PAGE1_COLLECTIONDETAILS"
         )
-        for collection in all_collections:
-            dates = collection.select("p.collection__date")
-            date_list = []
-            bin_list = []
-            for individualdate in dates:
-                date_list.append(parser.parse(individualdate.get_text()).date())
-            bins = collection.select("p.bins__name")
-            for individualbin in bins:
-                bin_list.append(individualbin.get_text().strip())
 
-        schedule = list(zip(date_list, bin_list))
+        # Get each individual collection, displayed on the page as
+        # Next and Future collections
+        all_collections = []
+        for bin_collection in bin_collections:
+            
+            nextcollection = bin_collection.select("div.collection--next")
+            futurecollections = bin_collection.select("div.collection__row")
+    
+            all_collections += nextcollection
+            all_collections += futurecollections
+    
+    
+        schedule = []
+        # For each collection, get the date of collection and the bins to be collected
+        # This needs to be done becasue multiple bins can be collected on 1 day
+        for collection in all_collections:
+                dates = collection.select("p.collection__date")
+                for individualdate in dates:
+                    date = parser.parse(individualdate.get_text()).date()
+                    bins = collection.select("p.bins__name")
+                    for individualbin in bins:
+                        schedule.append([date,individualbin.get_text().strip()])
 
         entries = []
         for sched_entry in schedule:
